@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "build": "webpack --mode production",
+    "build": "webpack --config webpack.config.mjs",
     "lint": "eslint src/**/*.js"
   },
   "devDependencies": {

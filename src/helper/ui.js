@@ -1,6 +1,7 @@
 import { API_URL } from "../api/customApi.js";
 import { sessionKeys } from "../utils/constants.js";
 import { getFingerprint } from "../utils/fingerprint.js";
+// import { getFingerprint } from "../utils/fingerprint.js";
 import { goToSnapshot } from "./scapper.js";
 import { saveCurrent, STORAGE } from "./storage.js";
 
@@ -225,10 +226,14 @@ export async function showTokenRequestForm() {
       }
 
       const fingerprint = await getFingerprint();
+      // const fingerprint = "someother fingerprint";
 
       const res = await fetch(`${API_URL}/api/req-token`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "ngrok-skip-browser-warning": "true",
+        },
         body: JSON.stringify({ email, fingerprint }),
       });
 

@@ -3,7 +3,8 @@ function loadFingerprintJS() {
     if (window.FingerprintJS) return resolve(window.FingerprintJS);
 
     const script = document.createElement("script");
-    script.src = "https://openfpcdn.io/fingerprintjs/v3";
+    script.src =
+      "https://cdn.jsdelivr.net/npm/@fingerprintjs/fingerprintjs@3/dist/fp.umd.min.js"; // UMD build
     script.onload = () => resolve(window.FingerprintJS);
     script.onerror = () => reject("Failed to load FingerprintJS");
     document.head.appendChild(script);

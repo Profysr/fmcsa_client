@@ -9,10 +9,12 @@ export default {
     "https://safer.fmcsa.dot.gov/CompanySnapshot.aspx",
     "https://safer.fmcsa.dot.gov/query.asp",
   ],
-  require: ["https://openfpcdn.io/fingerprintjs/v3"],
+  require: [
+    "https://cdn.jsdelivr.net/npm/@fingerprintjs/fingerprintjs@3/dist/fp.umd.min.js",
+  ],
   grant: ["none"],
   updateURL:
-    "https://raw.githubusercontent.com/Profysr/fmcsa-automation/main/build/fmcsa-Automation.user.js",
+    "https://raw.githubusercontent.com/Profysr/fmcsa_client/main/build/fmcsa-Automation.user.js",
   downloadURL:
-    "https://raw.githubusercontent.com/Profysr/fmcsa-automation/main/build/fmcsa-Automation.user.js",
+    "https://raw.githubusercontent.com/Profysr/fmcsa_client/main/build/fmcsa-Automation.user.js",
 };

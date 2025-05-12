@@ -3,7 +3,7 @@ export function goToSnapshot() {
 }
 
 export function submitQuery(number) {
-  const form = document.forms["QueryBox"];
+  const form = document.forms.QueryBox;
   if (!form) return;
 
   const input = form.querySelector('[name="query_string"]');

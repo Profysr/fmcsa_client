@@ -1,6 +1,8 @@
 import { sessionKeys } from "../utils/constants.js";
 
-export const API_URL = "http://localhost:3000"; // or your deployed URL
+export const API_URL =
+  "https://2457-2402-e000-4ad-7573-81a5-7ffd-f3cd-bd76.ngrok-free.app" ||
+  "http://localhost:3000";
 
 export async function apiFetch(url, options = {}) {
   const ott = sessionStorage.getItem(sessionKeys.token);
@@ -15,9 +17,10 @@ export async function apiFetch(url, options = {}) {
 
   const headers = {
     "Content-Type": "application/json",
+    "ngrok-skip-browser-warning": "true",
     ...(options.headers || {}),
-    ...(ott ? { Authorization: `Bearer ${ott}` } : {}),
-    ...(fingerprint ? { "X-Client-ID": fingerprint } : {}),
+    ...(ott && { Authorization: `Bearer ${ott}` }),
+    ...(fingerprint && { "X-Client-ID": fingerprint }),
   };
 
   const response = await fetch(`${API_URL}${url}`, {
