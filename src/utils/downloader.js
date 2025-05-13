@@ -2,8 +2,11 @@ import { apiFetch } from "../api/customApi.js";
 
 export async function downloadCSVFromServer(filename = "data.csv") {
   try {
+    await new Promise((resolve) => setTimeout(resolve, 2500));
+    // alert("Come to download");
     const res = await apiFetch("/api/download-csv");
-    if (!res.ok) throw new Error("Download failed.");
+    console.log("res: ", res);
+    if (!res.ok) throw new Error(res);
 
     const blob = await res.blob();
     const url = URL.createObjectURL(blob);
@@ -13,7 +16,8 @@ export async function downloadCSVFromServer(filename = "data.csv") {
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
+    // alert("res from download");
   } catch (err) {
-    console.error("CSV download failed:", err);
+    alert(`CSV download failed:, ${err}`);
   }
 }

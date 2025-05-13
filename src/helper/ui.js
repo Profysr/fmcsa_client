@@ -1,7 +1,7 @@
 import { API_URL } from "../api/customApi.js";
 import { sessionKeys } from "../utils/constants.js";
 import { getFingerprint } from "../utils/fingerprint.js";
-// import { getFingerprint } from "../utils/fingerprint.js";
+import { throttle } from "../utils/throttle.js";
 import { goToSnapshot } from "./scapper.js";
 import { saveCurrent, STORAGE } from "./storage.js";
 
@@ -93,8 +93,9 @@ export function showRangeForm() {
     `;
 
   document.body.appendChild(box);
+  const startBtn = document.getElementById("startScan");
 
-  document.getElementById("startScan").addEventListener("click", async () => {
+  const rangeFormAction = () => {
     const start = parseInt(document.getElementById("startNum").value);
     const end = parseInt(document.getElementById("endNum").value);
     if (isNaN(start) || isNaN(end) || start > end) {
@@ -107,24 +108,13 @@ export function showRangeForm() {
       alert("Count must be less than 500");
     }
 
-    //todo: send range to backend and check either the count is less than 500 or not
-    // const res = await apiFetch(`/post-range`, {
-    //   method: "POST",
-    //   headers: { "Content-Type": "application/json" },
-    //   body: JSON.stringify({ start, end }),
-    // });
-    // const json = await res.json();
-
-    // if (!json.allowed) {
-    //   alert(`❌ ${json.message}`);
-    //   return;
-    // }
-
     localStorage.setItem(STORAGE.rangeKey, JSON.stringify({ start, end }));
     saveCurrent(start);
     localStorage.setItem(STORAGE.rangeSetFlag, "true");
     location.reload();
-  });
+  };
+
+  startBtn.addEventListener("click", rangeFormAction);
 }
 
 // export async function showTokenForm() {
@@ -214,39 +204,35 @@ export async function showTokenRequestForm() {
   `;
 
   document.body.appendChild(box);
+  const reqBtn = document.getElementById("requestToken");
 
-  document
-    .getElementById("requestToken")
-    .addEventListener("click", async () => {
-      const email = document.getElementById("emailInput").value.trim();
+  const throttledReqToken = throttle(async () => {
+    const email = document.getElementById("emailInput").value.trim();
+    const fingerprint = await getFingerprint();
+    const res = await fetch(`${API_URL}/api/req-token`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ email, fingerprint }),
+    });
 
-      if (!email) {
-        alert("❌ Please enter a valid/registered email.");
-        return;
-      }
-
-      const fingerprint = await getFingerprint();
-      // const fingerprint = "someother fingerprint";
-
-      const res = await fetch(`${API_URL}/api/req-token`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "ngrok-skip-browser-warning": "true",
-        },
-        body: JSON.stringify({ email, fingerprint }),
-      });
-
-      const data = await res.json();
-      if (res.ok && data.token) {
+    const data = await res.json();
+    if (res.ok) {
+      if (!data.token) {
+        alert("Waiting for approval");
+      } else {
         const expiresAt = Date.now() + 7 * 24 * 60 * 60 * 1000;
         sessionStorage.setItem(sessionKeys.token, data.token);
         sessionStorage.setItem(sessionKeys.tokenExpiry, expiresAt.toString());
         sessionStorage.setItem(sessionKeys.fingerprint, fingerprint);
-        document.body.removeChild(overlay);
-        document.body.removeChild(box);
-      } else {
-        alert(`❌ Failed: ${data.error || "Unknown error"}`);
       }
-    });
+    } else {
+      alert(`❌ Failed: ${data.error || "Unknown error while req token"}`);
+    }
+    document.body.removeChild(overlay);
+    document.body.removeChild(box);
+  }, 10000);
+
+  reqBtn.addEventListener("click", throttledReqToken);
 }

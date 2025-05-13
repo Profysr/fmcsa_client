@@ -6,24 +6,25 @@ import {
   getRange,
   saveCurrent,
   STORAGE,
+  validateSessionStorage,
 } from "./helper/storage.js";
 import {
   addFloatingToolbar,
   showRangeForm,
   showTokenRequestForm,
 } from "./helper/ui.js";
-import { requiredValues, sessionKeys } from "./utils/constants.js";
+import { validateActiveTable } from "./helper/validator.js";
+import { requiredValues } from "./utils/constants.js";
+
 import { downloadCSVFromServer } from "./utils/downloader.js";
 
 addFloatingToolbar();
 
 const shouldRun = localStorage.getItem(STORAGE.runFlag) === "true";
 const rangeSet = localStorage.getItem(STORAGE.rangeSetFlag) === "true";
-const isTokenValid = Object.keys(sessionKeys).every(
-  (key) => !!sessionStorage.getItem(key)
-);
+const isTokenValid = validateSessionStorage();
 
-function handleSnapshotPage() {
+async function handleSnapshotPage() {
   if (shouldRun && !isTokenValid) {
     showTokenRequestForm();
     return;
@@ -39,9 +40,11 @@ function handleSnapshotPage() {
     const current = getCurrent();
 
     if (current <= end) {
-      setTimeout(() => submitQuery(current), 2000);
+      submitQuery(current);
+      // setTimeout(() => submitQuery(current), 800);
+      // redirects the user to the query.asp page
     } else {
-      downloadCSVFromServer(
+      await downloadCSVFromServer(
         `Record of ${start}-${end} at ${new Date().toLocaleDateString()}.csv`
       );
       alert("✅ Completed MX/MC range.");
@@ -59,44 +62,49 @@ async function handleQueryPage() {
   const text = table.innerText;
 
   if (text.includes("Record Inactive") || text.includes("Record Not Found")) {
-    console.log(`❌ MX ${current} is inactive.`);
+    // alert(`❌ MX ${current} is inactive.`);
+    current++;
+    saveCurrent(current);
+    goToSnapshot();
+    // setTimeout(() => goToSnapshot(), 400);
+  } else if (text.includes("USDOT INFORMATION")) {
+    const isValid = validateActiveTable(table);
+
+    // alert(`is valid: ${isValid}`);
+    if (isValid) {
+      const record = {};
+      requiredValues.forEach((key) => {
+        record[key] = getFieldValue(table, key) || "NOT FOUND";
+      });
+
+      try {
+        const response = await apiFetch(`/api/validate-record`, {
+          method: "POST",
+          body: JSON.stringify({ record }),
+        });
+
+        await response.json();
+        // alert(`✅ Server response:, ${result.message}`);
+      } catch (error) {
+        console.error(`❌ Error sending record: ${error}`);
+      }
+    }
 
     current++;
     saveCurrent(current);
-    setTimeout(() => goToSnapshot(), 500);
-  } else if (text.includes("USDOT INFORMATION")) {
-    Object.keys(requiredValues).forEach((key) => {
-      requiredValues[key] = getFieldValue(table, key) || "NOT FOUND";
-    });
-
-    try {
-      const response = await apiFetch(`/api/validate-record`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ record: requiredValues }),
-      });
-
-      const result = await response.json();
-      console.log("✅ Server response:", result);
-
-      current++;
-      saveCurrent(current);
-    } catch (error) {
-      console.error("❌ Error sending record:", error);
-    }
   }
 
   if (current <= end) {
-    setTimeout(() => submitQuery(current), 1500);
+    submitQuery(current);
+    // setTimeout(() => , 400);
   } else {
-    downloadCSVFromServer(
+    await downloadCSVFromServer(
       `Record of ${start}-${end} at ${new Date().toLocaleTimeString()}.csv`
     );
     clearAllStorage();
     alert("✅ Finished checking all numbers.");
-    setTimeout(() => goToSnapshot(), 500);
+    goToSnapshot();
+    // setTimeout(() => goToSnapshot(), 1000);
   }
 }
 

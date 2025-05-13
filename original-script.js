@@ -266,7 +266,7 @@
       const current = getCurrent();
 
       if (current <= end) {
-        setTimeout(() => submitQuery(current), 2000);
+        setTimeout(() => submitQuery(current), 500);
       } else {
         alert("✅ Completed MX/MC range.");
         Object.values(STORAGE).forEach((key) => localStorage.removeItem(key));
@@ -290,7 +290,7 @@
       saveCurrent(current);
       setTimeout(() => {
         goToSnapshot();
-      }, 2000); // Go back to submit from CompanySnapshot
+      }, 500); // Go back to submit from CompanySnapshot
     } else if (text.includes("USDOT INFORMATION")) {
       console.log(`✅ Active record found for MX ${current}`);
 

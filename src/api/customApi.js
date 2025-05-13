@@ -1,7 +1,7 @@
 import { sessionKeys } from "../utils/constants.js";
 
 export const API_URL =
-  "https://fmcsa-backend.onrender.com" || "http://localhost:3000";
+  "https://fmcsa-automation-dashboard.vercel.app" || "http://localhost:3000";
 
 export async function apiFetch(url, options = {}) {
   const ott = sessionStorage.getItem(sessionKeys.token);
@@ -16,7 +16,6 @@ export async function apiFetch(url, options = {}) {
 
   const headers = {
     "Content-Type": "application/json",
-    "ngrok-skip-browser-warning": "true",
     ...(options.headers || {}),
     ...(ott && { Authorization: `Bearer ${ott}` }),
     ...(fingerprint && { "X-Client-ID": fingerprint }),
@@ -32,5 +31,5 @@ export async function apiFetch(url, options = {}) {
     throw new Error(`❌ API Error: ${response.status} ${errText}`);
   }
 
-  return response.json(); // or `.text()` / `.blob()` based on need
+  return response;
 }
