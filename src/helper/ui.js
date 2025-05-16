@@ -1,9 +1,11 @@
 import { API_URL } from "../api/customApi.js";
 import { sessionKeys } from "../utils/constants.js";
 import { getFingerprint } from "../utils/fingerprint.js";
+import { getDeviceAndLocationInfo } from "../utils/getDeviceAndLocationInfo.js";
 import { throttle } from "../utils/throttle.js";
 import { goToSnapshot } from "./scapper.js";
 import { saveCurrent, STORAGE } from "./storage.js";
+import { arrowIcon, whatsApp } from "./svgs.js";
 
 export function addFloatingToolbar() {
   const toolbar = document.createElement("div");
@@ -110,13 +112,12 @@ export function showRangeForm() {
 
     localStorage.setItem(STORAGE.rangeKey, JSON.stringify({ start, end }));
     // implementing the functionality of 500 lots
-    const initialEnd = Math.min(start + 499, end);
+    const initialEnd = Math.min(start + 500, end);
     localStorage.setItem(
       STORAGE.currRange,
       JSON.stringify({ start, end: initialEnd })
     );
-  
-    
+
     saveCurrent(start);
     localStorage.setItem(STORAGE.rangeSetFlag, "true");
     location.reload();
@@ -217,12 +218,14 @@ export async function showTokenRequestForm() {
   const throttledReqToken = throttle(async () => {
     const email = document.getElementById("emailInput").value.trim();
     const fingerprint = await getFingerprint();
+    const deviceInfo = await getDeviceAndLocationInfo();
+
     const res = await fetch(`${API_URL}/api/req-token`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ email, fingerprint }),
+      body: JSON.stringify({ email, fingerprint, deviceInfo }),
     });
 
     const data = await res.json();
@@ -233,7 +236,6 @@ export async function showTokenRequestForm() {
         const expiresAt = Date.now() + 7 * 24 * 60 * 60 * 1000;
         sessionStorage.setItem(sessionKeys.token, data.token);
         sessionStorage.setItem(sessionKeys.tokenExpiry, expiresAt.toString());
-        sessionStorage.setItem(sessionKeys.fingerprint, fingerprint);
       }
     } else {
       alert(`❌ Failed: ${data.error || "Unknown error while req token"}`);
@@ -243,4 +245,81 @@ export async function showTokenRequestForm() {
   }, 10000);
 
   reqBtn.addEventListener("click", throttledReqToken);
+}
+
+export function addWhatsAppHelpButton() {
+  // Avoid adding multiple times
+  if (document.querySelector("#whatsapp-help-container")) return;
+
+  // Create container
+  const container = document.createElement("div");
+  container.id = "whatsapp-help-container";
+  container.style.cssText = `
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 8px;
+    font-family: sans-serif;
+  `;
+
+  // Create tooltip
+  const tooltip = document.createElement("div");
+  tooltip.innerHTML = `Having a problem?`;
+  tooltip.style.cssText = `
+    background: #f1f1f1;
+    color: #333;
+    padding: 8px 12px;
+    border-radius: 8px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+    font-size: 14px;
+    animation: fadeInUp 1s ease forwards;
+  `;
+
+  // Create arrow
+  const arrow = document.createElement("div");
+  arrowIcon(arrow);
+  arrow.style.cssText = `
+    font-size: 20px;
+    animation: bounce 1s infinite;
+    margin-right: 5px;
+  `;
+
+  // Create WhatsApp button
+  const button = document.createElement("a");
+  button.href = "https://wa.me/923037377597"; // Replace with your number
+  button.target = "_blank";
+  button.style.cssText = `
+  width: 60px;
+  height: 60px;
+  transition: transform 0.3s ease;
+`;
+
+  whatsApp(button);
+
+  // Add all to container
+  container.appendChild(tooltip);
+  container.appendChild(arrow);
+  container.appendChild(button);
+
+  // Add container to body
+  document.body.appendChild(container);
+
+  // Inject keyframe animations
+  const style = document.createElement("style");
+  style.textContent = `
+    @keyframes bounce {
+      0%, 100% { transform: translateY(5px); }
+      50% { transform: translateY(-2px); }
+    }
+
+    @keyframes fadeInUp {
+      0% { opacity: 0; transform: translateY(20px); }
+      100% { opacity: 1; transform: translateY(0); }
+    }
+  `;
+  document.head.appendChild(style);
 }

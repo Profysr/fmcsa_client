@@ -1,5 +1,10 @@
-import { apiFetch } from "./api/customApi.js";
-import { getFieldValue, goToSnapshot, submitQuery } from "./helper/scapper.js";
+import { validateReq } from "./api/customApi.js";
+import {
+  checkLeftOverRecords,
+  getFieldValue,
+  goToSnapshot,
+  submitQuery,
+} from "./helper/scapper.js";
 import {
   clearAllStorage,
   getCurrent,
@@ -11,10 +16,10 @@ import {
 } from "./helper/storage.js";
 import {
   addFloatingToolbar,
+  addWhatsAppHelpButton,
   showRangeForm,
   showTokenRequestForm,
 } from "./helper/ui.js";
-import { validateActiveTable } from "./helper/validator.js";
 import { requiredValues } from "./utils/constants.js";
 import { downloadCSVFromServer } from "./utils/downloader.js";
 
@@ -35,21 +40,6 @@ async function handleSnapshotPage() {
     return;
   }
 
-  // if (shouldRun && isTokenValid && rangeSet) {
-  //   const { start, end } = getRange();
-  //   const current = getCurrent();
-
-  //   if (current <= end) {
-  //     submitQuery(current);
-  //     // redirects the user to the query.asp page
-  //   } else {
-  //     await downloadCSVFromServer(
-  //       `Record of ${start}-${end} at ${new Date().toLocaleDateString()}.csv`
-  //     );
-  //     alert("✅ Completed MX/MC range.");
-  //     clearAllStorage();
-  //   }
-  // }
   if (shouldRun && isTokenValid && rangeSet) {
     const { start, end } = getCurrRange();
     const current = getCurrent();
@@ -57,13 +47,14 @@ async function handleSnapshotPage() {
     if (current <= end) {
       submitQuery(current);
     } else {
+      await checkLeftOverRecords();
       await downloadCSVFromServer(
         `Record of ${start}-${end} at ${new Date().toLocaleDateString()}.csv`
       );
 
       const fullRange = getRange();
       const nextStart = end + 1;
-      const nextEnd = Math.min(nextStart + 499, fullRange.end);
+      const nextEnd = Math.min(nextStart + 500, fullRange.end);
 
       if (nextStart <= fullRange.end) {
         localStorage.setItem(
@@ -93,55 +84,42 @@ async function handleQueryPage() {
     saveCurrent(current);
     goToSnapshot();
   } else if (text.includes("USDOT INFORMATION")) {
-    const isValid = validateActiveTable(table);
+    const record = {};
+    requiredValues.forEach((key) => {
+      record[key] = getFieldValue(table, key) || "NOT FOUND";
+    });
 
-    // alert(`is valid: ${isValid}`);
-    if (isValid) {
-      const record = {};
-      requiredValues.forEach((key) => {
-        record[key] = getFieldValue(table, key) || "NOT FOUND";
-      });
+    // Save to localStorage
+    const uniqueKey = record["USDOT Number"];
+    const existing = JSON.parse(localStorage.getItem("validRecords") || "[]");
 
-      try {
-        const response = await apiFetch(`/api/validate-record`, {
-          method: "POST",
-          body: JSON.stringify({ record }),
-        });
+    const alreadyExists = existing.some(
+      (item) => item["USDOT Number"] === uniqueKey
+    );
 
-        await response.json();
-        // alert(`✅ Server response:, ${result.message}`);
-      } catch (error) {
-        console.error(`❌ Error sending record: ${error}`);
+    if (!alreadyExists) {
+      existing.push(record);
+      localStorage.setItem("validRecords", JSON.stringify(existing));
+
+      if (existing.length > 25) {
+        await validateReq(existing);
       }
     }
-
     current++;
     saveCurrent(current);
   }
 
-  // if (current <= end) {
-  //   submitQuery(current);
-  //   // setTimeout(() => , 400);
-  // } else {
-  //   await downloadCSVFromServer(
-  //     `Record of ${start}-${end} at ${new Date().toLocaleTimeString()}.csv`
-  //   );
-  //   clearAllStorage();
-  //   alert("✅ Finished checking all numbers.");
-  //   goToSnapshot();
-  //  // setTimeout(() => goToSnapshot(), 1000);
-  // }
-
   if (current <= end) {
     submitQuery(current);
   } else {
+    await checkLeftOverRecords();
     await downloadCSVFromServer(
       `Record of ${start}-${end} at ${new Date().toLocaleTimeString()}.csv`
     );
 
     const fullRange = getRange();
     const nextStart = end + 1;
-    const nextEnd = Math.min(nextStart + 499, fullRange.end);
+    const nextEnd = Math.min(nextStart + 500, fullRange.end);
 
     if (nextStart <= fullRange.end) {
       localStorage.setItem(
@@ -163,3 +141,5 @@ if (location.href.includes("CompanySnapshot.aspx")) {
 } else if (location.href.includes("query.asp") && shouldRun && rangeSet) {
   handleQueryPage();
 }
+
+addWhatsAppHelpButton();

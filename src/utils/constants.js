@@ -13,6 +13,5 @@ export const requiredValues = [
 
 export const sessionKeys = {
   token: "__fmcsa_verification_token",
-  fingerprint: "__fmcsa_user_fingerprint",
   tokenExpiry: "__fmca_verification_token_expiry",
 };

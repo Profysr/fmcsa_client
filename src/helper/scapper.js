@@ -1,3 +1,5 @@
+import { validateReq } from "../api/customApi.js";
+
 export function goToSnapshot() {
   location.href = "https://safer.fmcsa.dot.gov/CompanySnapshot.aspx";
 }
@@ -26,3 +28,10 @@ export function getFieldValue(el, labelText) {
     labelElem?.nextElementSibling?.textContent.trim().toUpperCase() || null
   );
 }
+
+export const checkLeftOverRecords = async () => {
+  const leftover = JSON.parse(localStorage.getItem("validRecords") || "[]");
+  if (leftover.length > 0) {
+    await validateReq(leftover);
+  }
+};

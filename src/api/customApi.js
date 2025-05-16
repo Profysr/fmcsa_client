@@ -1,18 +1,20 @@
+import { validationChecks } from "../helper/validator.js";
 import { sessionKeys } from "../utils/constants.js";
+import { getFingerprint } from "../utils/fingerprint.js";
 
 export const API_URL =
   "https://fmcsa-automation-dashboard.vercel.app" || "http://localhost:3000";
 
 export async function apiFetch(url, options = {}) {
   const ott = sessionStorage.getItem(sessionKeys.token);
-  const fingerprint = sessionStorage.getItem(sessionKeys.fingerprint);
   const expiry = parseInt(sessionStorage.getItem(sessionKeys.tokenExpiry), 10);
-
   // Optional: clear expired token
   if (expiry && Date.now() > expiry) {
     Object.keys(sessionKeys).forEach((key) => sessionStorage.removeItem(key));
     throw new Error("🔒 Token has expired. Please re-authenticate.");
   }
+
+  const fingerprint = await getFingerprint();
 
   const headers = {
     "Content-Type": "application/json",
@@ -32,4 +34,20 @@ export async function apiFetch(url, options = {}) {
   }
 
   return response;
+}
+
+export async function validateReq(records) {
+  try {
+    const response = await apiFetch(`/api/validate-record`, {
+      method: "POST",
+      body: JSON.stringify({ records, checks: validationChecks }),
+    });
+
+    await response.json();
+    localStorage.removeItem("validRecords");
+    // console.log(result);
+    alert("record send");
+  } catch (error) {
+    throw new Error(`❌ Error sending records: ${error}`);
+  }
 }
