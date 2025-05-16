@@ -103,12 +103,20 @@ export function showRangeForm() {
       return;
     }
 
-    const count = end - start + 1;
-    if (count > 500) {
-      alert("Count must be less than 500");
-    }
+    // const count = end - start + 1;
+    // if (count > 500) {
+    //   alert("Count must be less than 500");
+    // }
 
     localStorage.setItem(STORAGE.rangeKey, JSON.stringify({ start, end }));
+    // implementing the functionality of 500 lots
+    const initialEnd = Math.min(start + 499, end);
+    localStorage.setItem(
+      STORAGE.currRange,
+      JSON.stringify({ start, end: initialEnd })
+    );
+  
+    
     saveCurrent(start);
     localStorage.setItem(STORAGE.rangeSetFlag, "true");
     location.reload();

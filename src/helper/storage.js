@@ -5,10 +5,14 @@ export const STORAGE = {
   rangeKey: "fmcsa_range",
   runFlag: "fmcsa_should_run",
   rangeSetFlag: "fmcsa_range_set",
+  currRange: "fmcsa_curr_range",
 };
 
 export const getRange = () =>
   JSON.parse(localStorage.getItem(STORAGE.rangeKey) || "{}");
+
+export const getCurrRange = () =>
+  JSON.parse(localStorage.getItem(STORAGE.currRange) || "{}");
 
 export const getCurrent = () =>
   parseInt(localStorage.getItem(STORAGE.currentKey));
