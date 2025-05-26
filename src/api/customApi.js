@@ -46,7 +46,7 @@ export async function validateReq(records) {
     await response.json();
     localStorage.removeItem("validRecords");
     // console.log(result);
-    alert("record send");
+    // alert("record send");
   } catch (error) {
     throw new Error(`❌ Error sending records: ${error}`);
   }

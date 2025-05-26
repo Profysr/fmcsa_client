@@ -23,13 +23,12 @@ import {
 import { requiredValues } from "./utils/constants.js";
 import { downloadCSVFromServer } from "./utils/downloader.js";
 
-addFloatingToolbar();
-
 const shouldRun = localStorage.getItem(STORAGE.runFlag) === "true";
 const rangeSet = localStorage.getItem(STORAGE.rangeSetFlag) === "true";
 const isTokenValid = validateSessionStorage();
 
 async function handleSnapshotPage() {
+  await addFloatingToolbar();
   if (shouldRun && !isTokenValid) {
     showTokenRequestForm();
     return;
@@ -137,9 +136,8 @@ async function handleQueryPage() {
 }
 
 if (location.href.includes("CompanySnapshot.aspx")) {
+  addWhatsAppHelpButton();
   handleSnapshotPage();
 } else if (location.href.includes("query.asp") && shouldRun && rangeSet) {
   handleQueryPage();
 }
-
-addWhatsAppHelpButton();

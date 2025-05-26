@@ -28,13 +28,12 @@ export const shouldRun = localStorage.getItem(STORAGE.runFlag) === "true";
 export const rangeSet = localStorage.getItem(STORAGE.rangeSetFlag) === "true";
 
 export function validateSessionStorage() {
-  const { token, tokenExpiry, fingerprint } = sessionKeys;
+  const { token, tokenExpiry } = sessionKeys;
 
   const tokenValue = sessionStorage.getItem(token);
   const expiryValue = sessionStorage.getItem(tokenExpiry);
-  const fingerprintValue = sessionStorage.getItem(fingerprint);
 
-  if (!tokenValue || !expiryValue || !fingerprintValue) return false;
+  if (!tokenValue || !expiryValue) return false;
 
   return Date.now() < parseInt(expiryValue, 10);
 }

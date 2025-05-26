@@ -1,13 +1,14 @@
 import { API_URL } from "../api/customApi.js";
 import { sessionKeys } from "../utils/constants.js";
+import { downloadCSVFromServer } from "../utils/downloader.js";
 import { getFingerprint } from "../utils/fingerprint.js";
 import { getDeviceAndLocationInfo } from "../utils/getDeviceAndLocationInfo.js";
 import { throttle } from "../utils/throttle.js";
 import { goToSnapshot } from "./scapper.js";
-import { saveCurrent, STORAGE } from "./storage.js";
+import { getCurrRange, saveCurrent, STORAGE } from "./storage.js";
 import { arrowIcon, whatsApp } from "./svgs.js";
 
-export function addFloatingToolbar() {
+export async function addFloatingToolbar() {
   const toolbar = document.createElement("div");
   toolbar.style = `
         position: fixed;
@@ -51,9 +52,14 @@ export function addFloatingToolbar() {
     goToSnapshot();
   });
 
-  const stopBtn = createButton("🛑 Stop Automation", "#dc3545", () => {
-    Object.values(STORAGE).forEach((key) => localStorage.removeItem(key));
+  const stopBtn = createButton("🛑 Stop Automation", "#dc3545", async () => {
     alert("🛑 FMCSA Automation stopped.");
+    const { start, end } = getCurrRange();
+
+    await downloadCSVFromServer(
+      `Record of ${start}-${end} at ${new Date().toLocaleTimeString()}.csv`
+    );
+    Object.values(STORAGE).forEach((key) => localStorage.removeItem(key));
   });
 
   toolbar.appendChild(startBtn);
@@ -126,63 +132,6 @@ export function showRangeForm() {
   startBtn.addEventListener("click", rangeFormAction);
 }
 
-// export async function showTokenForm() {
-//   const overlay = document.createElement("div");
-//   overlay.style = `
-//     position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
-//     background: rgba(0, 0, 0, 0.5); z-index: 9998;
-//   `;
-//   document.body.appendChild(overlay);
-
-//   const box = document.createElement("div");
-//   box.style = `
-//     position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
-//     background: #fff; border-radius: 12px; padding: 24px 32px;
-//     box-shadow: 0 10px 30px rgba(0,0,0,0.25); z-index: 9999;
-//     font-family: 'Segoe UI', sans-serif; min-width: 300px;
-//   `;
-
-//   box.innerHTML = `
-//     <h2 style="margin-top: 0; font-size: 20px; margin-bottom: 16px;">🔐 Enter Access Token</h2>
-//     <div style="margin-bottom: 16px;">
-//       <label style="display: block; margin-bottom: 6px;">Token:</label>
-//       <input id="authToken" type="text" style="width: 100%; padding: 8px; border-radius: 6px; border: 1px solid #ccc;">
-//     </div>
-//     <button id="submitToken" style="padding: 10px 16px; border: none; border-radius: 6px;
-//       background-color: #28a745; color: white; font-size: 14px; cursor: pointer;">
-//       ✅ Save Token
-//     </button>
-//   `;
-
-//   document.body.appendChild(box);
-
-//   document.getElementById("submitToken").addEventListener("click", async () => {
-//     const token = document.getElementById("authToken").value.trim();
-//     if (!token) {
-//       alert("⚠ Please enter a valid token.");
-//       return;
-//     }
-
-//     const now = Date.now();
-//     const expiresAt = now + 7 * 24 * 60 * 60 * 1000;
-
-//     sessionStorage.setItem("verificationToken", token);
-//     sessionStorage.setItem("verificationTokenExpires", expiresAt.toString());
-
-//     // ✅ Get and store fingerprint
-//     if (!sessionStorage.getItem(sessionKeys.fingerprint)) {
-//       const fp = await FingerprintJS.load();
-//       const result = await fp.get();
-//       const fingerprint = result.visitorId;
-//       sessionStorage.setItem("clientFingerprint", fingerprint);
-//     }
-
-//     // alert("✅ Token saved successfully.");
-//     document.body.removeChild(box);
-//     document.body.removeChild(overlay);
-//   });
-// }
-
 export async function showTokenRequestForm() {
   const overlay = document.createElement("div");
   overlay.style = `
@@ -219,6 +168,8 @@ export async function showTokenRequestForm() {
     const email = document.getElementById("emailInput").value.trim();
     const fingerprint = await getFingerprint();
     const deviceInfo = await getDeviceAndLocationInfo();
+
+    // console.log("Device Info:", deviceInfo);
 
     const res = await fetch(`${API_URL}/api/req-token`, {
       method: "POST",
